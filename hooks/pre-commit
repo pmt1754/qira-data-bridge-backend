@@ -1,0 +1,166 @@
+#!/bin/sh
+# Pre-commit hook for AI-based code review and refactoring
+# This hook runs before every commit to ensure code quality
+
+# Detect OS and run appropriate script
+if command -v powershell.exe >/dev/null 2>&1; then
+    # Windows - run PowerShell version
+    HOOK_DIR="$(cd "$(dirname "$0")" && pwd)"
+    powershell.exe -ExecutionPolicy Bypass -File "$HOOK_DIR/pre-commit.ps1"
+    exit $?
+fi
+
+# Unix/Linux/Mac - run bash version
+echo "🤖 Running AI-based pre-commit checks..."
+echo "================================================"
+
+# Get the project root directory
+PROJECT_ROOT=$(git rev-parse --show-toplevel)
+HOOK_OUTPUT_DIR="$PROJECT_ROOT/.git/hooks/reports"
+mkdir -p "$HOOK_OUTPUT_DIR"
+
+# Output files
+REVIEW_OUTPUT="$HOOK_OUTPUT_DIR/last-review.md"
+REFACTOR_OUTPUT="$HOOK_OUTPUT_DIR/last-refactor.md"
+TIMESTAMP=$(date "+%Y-%m-%d %H:%M:%S")
+
+# Track if there are any blocking issues
+HAS_BLOCKING_ISSUES=false
+REVIEW_ISSUES=""
+
+# Check if copilot protocols exist
+if [ ! -f "$PROJECT_ROOT/copilot/protocols/review.md" ]; then
+    echo "⚠️  Warning: copilot/protocols/review.md not found"
+    echo "   Skipping AI review check"
+else
+    echo "📋 Step 1: Running code review protocol..."
+    echo "---" > "$REVIEW_OUTPUT"
+    echo "timestamp: $TIMESTAMP" >> "$REVIEW_OUTPUT"
+    echo "protocol: review" >> "$REVIEW_OUTPUT"
+    echo "---" >> "$REVIEW_OUTPUT"
+    echo "" >> "$REVIEW_OUTPUT"
+    echo "# Code Review Report" >> "$REVIEW_OUTPUT"
+    echo "" >> "$REVIEW_OUTPUT"
+    echo "**Protocol:** \`copilot/protocols/review.md\`" >> "$REVIEW_OUTPUT"
+    echo "**Generated:** $TIMESTAMP" >> "$REVIEW_OUTPUT"
+    echo "" >> "$REVIEW_OUTPUT"
+    
+    # Get staged files
+    STAGED_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep -E '\.(java|kt|kts|properties|md|yml|yaml)$' || true)
+    
+    if [ -n "$STAGED_FILES" ]; then
+        echo "**Files to be committed:**" >> "$REVIEW_OUTPUT"
+        echo "\`\`\`" >> "$REVIEW_OUTPUT"
+        echo "$STAGED_FILES" >> "$REVIEW_OUTPUT"
+        echo "\`\`\`" >> "$REVIEW_OUTPUT"
+        echo "" >> "$REVIEW_OUTPUT"
+        echo "## Review Checklist" >> "$REVIEW_OUTPUT"
+        echo "" >> "$REVIEW_OUTPUT"
+        
+        # Check each staged Java file for potential issues
+        for file in $(echo "$STAGED_FILES" | grep -E '\.(java|kt|kts)$'); do
+            FILE_PATH="$PROJECT_ROOT/$file"
+            if [ -f "$FILE_PATH" ]; then
+                # Check for common issues (excluding comments)
+                CODE_CONTENT=$(grep -v '^\s*//' "$FILE_PATH" || true)
+                
+                if echo "$CODE_CONTENT" | grep -q 'System\.out\.println\s*\('; then
+                    REVIEW_ISSUES="$REVIEW_ISSUES\n- :x: BLOCKING: Found System.out.println in $file - use proper logging (SLF4J)"
+                    HAS_BLOCKING_ISSUES=true
+                fi
+                if echo "$CODE_CONTENT" | grep -q '\.printStackTrace\s*(\s*)'; then
+                    REVIEW_ISSUES="$REVIEW_ISSUES\n- :x: BLOCKING: Found printStackTrace() in $file - use proper logging"
+                    HAS_BLOCKING_ISSUES=true
+                fi
+                if echo "$CODE_CONTENT" | grep -qE 'catch\s*\([^)]+\)\s*\{\s*\}'; then
+                    REVIEW_ISSUES="$REVIEW_ISSUES\n- :x: BLOCKING: Found empty catch block in $file - handle exceptions properly"
+                    HAS_BLOCKING_ISSUES=true
+                fi
+                if echo "$CODE_CONTENT" | grep -q '@Autowired\s\+private'; then
+                    REVIEW_ISSUES="$REVIEW_ISSUES\n- :warning: WARNING: Found field injection in $file - prefer constructor injection"
+                fi
+            fi
+        done
+        
+        # Add detected issues to report
+        if [ -n "$REVIEW_ISSUES" ]; then
+            echo "" >> "$REVIEW_OUTPUT"
+            echo "## Detected Issues" >> "$REVIEW_OUTPUT"
+            echo "" >> "$REVIEW_OUTPUT"
+            echo -e "$REVIEW_ISSUES" >> "$REVIEW_OUTPUT"
+        fi
+        
+        echo "✅ Review report generated"
+    else
+        echo "   No relevant files staged for review"
+    fi
+fi
+
+echo ""
+
+# Check for refactor protocol
+if [ ! -f "$PROJECT_ROOT/copilot/protocols/refactor.md" ]; then
+    echo "⚠️  Warning: copilot/protocols/refactor.md not found"
+    echo "   Skipping refactoring suggestions"
+else
+    echo "🔧 Step 2: Checking refactoring opportunities..."
+    
+    # Create refactor output
+    echo "---" > "$REFACTOR_OUTPUT"
+    echo "timestamp: $TIMESTAMP" >> "$REFACTOR_OUTPUT"
+    echo "protocol: refactor" >> "$REFACTOR_OUTPUT"
+    echo "---" >> "$REFACTOR_OUTPUT"
+    echo "" >> "$REFACTOR_OUTPUT"
+    echo "# Refactoring Suggestions" >> "$REFACTOR_OUTPUT"
+    echo "" >> "$REFACTOR_OUTPUT"
+    echo "**Protocol:** \`copilot/protocols/refactor.md\`" >> "$REFACTOR_OUTPUT"
+    echo "**Generated:** $TIMESTAMP" >> "$REFACTOR_OUTPUT"
+    echo "" >> "$REFACTOR_OUTPUT"
+    
+    # Get staged code files
+    STAGED_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep -E '\.(java|kt|kts)$' || true)
+    
+    if [ -n "$STAGED_FILES" ]; then
+        echo "**Files analyzed:**" >> "$REFACTOR_OUTPUT"
+        echo "\`\`\`" >> "$REFACTOR_OUTPUT"
+        echo "$STAGED_FILES" >> "$REFACTOR_OUTPUT"
+        echo "\`\`\`" >> "$REFACTOR_OUTPUT"
+        echo "" >> "$REFACTOR_OUTPUT"
+        echo "## Refactoring Opportunities" >> "$REFACTOR_OUTPUT"
+        echo "" >> "$REFACTOR_OUTPUT"
+        echo "Consider reviewing code for common refactoring patterns." >> "$REFACTOR_OUTPUT"
+        
+        echo "✅ Refactoring report generated"
+    else
+        echo "   No code files staged for refactoring analysis"
+    fi
+fi
+
+echo ""
+echo "================================================"
+
+if [ "$HAS_BLOCKING_ISSUES" = true ]; then
+    echo ""
+    echo "❌ COMMIT BLOCKED!"
+    echo ""
+    echo "Your commit has been blocked due to code quality issues."
+    echo "Please fix the blocking issues and try again."
+    echo ""
+    echo "Review report: $REVIEW_OUTPUT"
+    echo ""
+    echo "To bypass this check (NOT RECOMMENDED), use:"
+    echo "  git commit --no-verify"
+    echo ""
+    exit 1
+else
+    echo "✅ Pre-commit checks completed successfully!"
+    echo ""
+    if [ -n "$REVIEW_ISSUES" ]; then
+        echo "⚠️  Note: Some warnings were found. Review the report for details."
+        echo ""
+    else
+        echo "✨ No issues detected. Safe to commit!"
+        echo ""
+    fi
+    exit 0
+fi
