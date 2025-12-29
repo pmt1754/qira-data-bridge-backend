@@ -40,9 +40,59 @@ Enhanced hooks that use **GitHub Copilot CLI** for AI-powered code reviews:
 
 **See `COPILOT_CLI_HOOKS.md` for detailed setup and usage instructions.**
 
-## Installationiven**: Uses project-specific protocols from `/copilot/protocols/` directory
+## Quick Start: Enabling Copilot CLI Hooks
 
-## Installation
+### Step 1: Install Prerequisites
+
+**GitHub CLI:**
+```powershell
+# Windows
+winget install --id GitHub.cli
+
+# macOS
+brew install gh
+
+# Linux (Ubuntu/Debian)
+curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null
+sudo apt update && sudo apt install gh
+```
+
+**Authenticate and Install Copilot:**
+```bash
+# Authenticate with GitHub
+gh auth login
+
+# Install Copilot extension
+gh extension install github/gh-copilot
+
+# Verify installation
+gh copilot --version
+```
+
+### Step 2: Enable Copilot CLI Hooks
+
+**From your project root:**
+```bash
+# Windows (PowerShell)
+New-Item -ItemType File -Path .git\hooks\USE_COPILOT_CLI -Force
+
+# Unix/Linux/Mac
+touch .git/hooks/USE_COPILOT_CLI
+```
+
+That's it! The next commit will automatically use AI-powered Copilot protocol checks.
+
+### Step 3: Verify It's Working
+
+Make a test commit. You should see:
+```
+╔════════════════════════════════════════════════════════════════╗
+║          GitHub Copilot Pre-Commit Quality Gate              ║
+╚════════════════════════════════════════════════════════════════╝
+```
+
+## Installation (Pattern-Based Hooks)
 
 ### Automatic Installation (Recommended)
 
@@ -116,6 +166,26 @@ BLOCKING ISSUES FOUND:
 
 Your commit has been blocked due to code quality issues.
 Please fix the blocking issues listed above and try again.
+```
+
+### Switching Between Hook Systems
+
+**Enable Copilot CLI Hooks:**
+```bash
+# Windows
+New-Item -ItemType File -Path .git\hooks\USE_COPILOT_CLI -Force
+
+# Unix/Linux/Mac
+touch .git/hooks/USE_COPILOT_CLI
+```
+
+**Disable Copilot CLI Hooks (revert to pattern-based):**
+```bash
+# Windows
+Remove-Item .git\hooks\USE_COPILOT_CLI -ErrorAction SilentlyContinue
+
+# Unix/Linux/Mac
+rm -f .git/hooks/USE_COPILOT_CLI
 ```
 
 ### Bypassing Hooks (Not Recommended)
