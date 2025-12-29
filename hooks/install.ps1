@@ -46,5 +46,8 @@ Write-Host ""
 Write-Host "The pre-commit hook will now run automatically before each commit." -ForegroundColor Cyan
 Write-Host "It will check your code for quality issues and block commits if problems are found." -ForegroundColor Cyan
 Write-Host ""
+Write-Host "OPTIONAL: Enable GitHub Copilot CLI hooks for AI-powered reviews" -ForegroundColor Yellow
+Write-Host "  See hooks/COPILOT_CLI_HOOKS.md for setup instructions" -ForegroundColor Gray
+Write-Host ""
 Write-Host "To bypass the hooks (not recommended), use: git commit --no-verify" -ForegroundColor Gray
 Write-Host ""

@@ -2,11 +2,13 @@
 
 This directory contains Git hooks that enforce code quality standards through automated checks before commits.
 
-## Available Hooks
+## Available Hook Systems
 
-### pre-commit
+### 1. Pattern-Based Pre-Commit Hooks (Default)
 
-The pre-commit hook runs automated code quality checks before allowing a commit to proceed. It performs:
+**Files**: `pre-commit`, `pre-commit.ps1`
+
+The default pre-commit hooks run fast, pattern-based code quality checks before allowing a commit to proceed. It performs:
 
 1. **Code Review Protocol** - Analyzes staged files for common issues:
    - ❌ **BLOCKING**: `System.out.println` usage (use SLF4J logging instead)
@@ -22,9 +24,23 @@ The pre-commit hook runs automated code quality checks before allowing a commit 
 - **Blocking Issues**: The hook will prevent commits when critical code quality issues are detected
 - **Cross-Platform**: Includes both PowerShell (Windows) and Bash (Unix/Linux/Mac) versions
 - **Reports**: Generates detailed reports in `.git/hooks/reports/` directory:
-  - `last-review.md` - Code review findings
-  - `last-refactor.md` - Refactoring suggestions
 - **Protocol-Driven**: Uses project-specific protocols from `/copilot/protocols/` directory
+
+### 2. GitHub Copilot CLI Pre-Commit Hooks (Advanced)
+
+**Files**: `pre-commit-copilot`, `pre-commit-copilot.ps1`
+
+Enhanced hooks that use **GitHub Copilot CLI** for AI-powered code reviews:
+
+- **AI-Powered Reviews**: Uses GitHub Copilot to analyze code changes
+- **Protocol-Based**: Reviews against architecture, security, performance, testing, and refactoring protocols
+- **Comprehensive**: Detects complex issues beyond pattern matching
+- **Detailed Reports**: Generates in-depth analysis reports
+- **Requires**: GitHub CLI with Copilot extension installed
+
+**See `COPILOT_CLI_HOOKS.md` for detailed setup and usage instructions.**
+
+## Installationiven**: Uses project-specific protocols from `/copilot/protocols/` directory
 
 ## Installation
 

@@ -2,6 +2,18 @@
 # Pre-commit hook for AI-based code review and refactoring
 # This hook runs before every commit to ensure code quality
 
+# Check if user wants to use Copilot CLI hooks
+if [ -f "$(git rev-parse --show-toplevel)/.git/hooks/USE_COPILOT_CLI" ]; then
+    # Run Copilot CLI version
+    HOOK_DIR="$(cd "$(dirname "$0")" && pwd)"
+    if command -v powershell.exe >/dev/null 2>&1; then
+        powershell.exe -ExecutionPolicy Bypass -File "$HOOK_DIR/pre-commit-copilot.ps1"
+    else
+        "$HOOK_DIR/pre-commit-copilot"
+    fi
+    exit $?
+fi
+
 # Detect OS and run appropriate script
 if command -v powershell.exe >/dev/null 2>&1; then
     # Windows - run PowerShell version
