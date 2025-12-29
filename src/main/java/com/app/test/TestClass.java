@@ -9,7 +9,7 @@ public class TestClass {
     public void goodMethod() {
         // Proper logging instead of System.out.println
         logger.info("Debug output");
-        
+
         try {
             // some code
         } catch (Exception e) {
