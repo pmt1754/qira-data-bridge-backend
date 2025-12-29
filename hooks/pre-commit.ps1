@@ -125,12 +125,12 @@ if (Test-Path $SecurityProtocol) {
                 $Content = Get-Content $FilePath -Raw
                 
                 # Check for security issues
-                if ($Content -match 'password\s*=\s*["\'].*["\']' -or $Content -match 'api[_-]?key\s*=\s*["\'].*["\']') {
+                if ($Content -match "password\s*=\s*[`"'].*[`"']" -or $Content -match "api[_-]?key\s*=\s*[`"'].*[`"']") {
                     $ReviewIssues += "BLOCKING: Possible hard-coded credentials in $file - use environment variables"
                     $HasBlockingIssues = $true
                     "- :x: BLOCKING: Possible hard-coded credentials detected in $file" | Add-Content -Path $SecurityOutput
                 }
-                if ($Content -match 'SELECT.*\+.*WHERE' -or $Content -match 'String\s+sql\s*=.*\+') {
+                if ($Content -match "SELECT.*\+.*WHERE" -or $Content -match "String\s+sql\s*=.*\+") {
                     $ReviewIssues += "BLOCKING: Possible SQL injection vulnerability in $file - use parameterized queries"
                     $HasBlockingIssues = $true
                     "- :x: BLOCKING: Possible SQL injection vulnerability in $file" | Add-Content -Path $SecurityOutput
